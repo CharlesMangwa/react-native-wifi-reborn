@@ -292,6 +292,10 @@ Called when the network status is resolved. It contains a boolean argument
 
 ### `isRemoveWifiNetwork`
 
+### `forgetNetwork(ssid: string): Promise`
+
+This method removes a WiFi from the Android WiFi configurations.
+
 ### forceWifiUsage(useWifi: bool)
 
 Method to force wifi usage if the user needs to send requests via wifi if it does not have internet connection.

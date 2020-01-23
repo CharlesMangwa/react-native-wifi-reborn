@@ -402,6 +402,28 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
     }
 
     /**
+     * This method removes a WiFi from the Android WiFi configurations.
+     *
+     * @param ssid the SSID of the WiFi you want to forget
+     * @param promise
+     */
+    @ReactMethod
+    private void forgetNetwork(final String ssid, Promise promise) {
+        try {
+            List<WifiConfiguration> list = wifi.getConfiguredNetworks();
+            for( WifiConfiguration i : list ) {
+                if(i.SSID != null && i.SSID.equals("\"" + ssid + "\"")) {
+                    wifi.removeNetwork(i.networkId);
+                    break;
+                }
+            }
+            promise.resolve(null);
+        } catch(Exception e) {
+            promise.reject(e);
+        }
+    }
+
+    /**
      * Disconnect current Wifi.
      */
     @ReactMethod
