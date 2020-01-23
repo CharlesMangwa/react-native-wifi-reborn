@@ -440,6 +440,14 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
     public void getCurrentWifiSSID(final Promise promise) {
         WifiInfo info = wifi.getConnectionInfo();
 
+        // The bssid check makes sure the nework is actually connected which
+        // is sometimes is not during connection processes
+        String bssid = info.getBSSID();
+        if(bssid != null && bssid.equals("00:00:00:00:00:00")) {
+            promise.resolve("");
+            return;
+        }
+
         // This value should be wrapped in double quotes, so we need to unwrap it.
         String ssid = info.getSSID();
         if (ssid.startsWith("\"") && ssid.endsWith("\"")) {
