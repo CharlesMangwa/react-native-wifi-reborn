@@ -189,10 +189,22 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
     }
 
     /**
+     * Send the SSID of a Wifi network into this to connect to the network.
+     * Example:  wifi.connectToSSID(ssid);
+     * After 8 seconds, the promise will either resolve or reject.
+     *
+     * @param SSID     name of the network to connect with
+     * @param promise
+     */
+    @ReactMethod
+    public void connectToSSID(@NonNull final String SSID, final Promise promise) {
+        connectTo(SSID, null, WIFI_ENCRYPTION.NONE, promise);
+    }
+
+    /**
      * Send the SSID and password of a Wifi network into this to connect to the network.
-     * Example:  wifi.findAndConnect(ssid, password);
-     * After 10 seconds, a post telling you whether you are connected will pop up.
-     * Callback returns true if ssid is in the range
+     * Example:  wifi.connectToProtectedSSID(ssid, password);
+     * After 8 seconds, the promise will either resolve or reject.
      *
      * @param SSID     name of the network to connect with
      * @param password password of the network to connect with
@@ -249,7 +261,7 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
      * @param password of the network to connect with
      * @param promise  to resolve or reject if connecting worked
      */
-    private void connectTo(@NonNull final String SSID, @NonNull final String password, @NonNull final WIFI_ENCRYPTION encryption, @NonNull final Promise promise) {
+    private void connectTo(@NonNull final String SSID, @Nullable final String password, @NonNull final WIFI_ENCRYPTION encryption, @NonNull final Promise promise) {
         // TODO: Compatibility with Android 10
         // Note: For now Android 10 still works but in the future, the WifiConfiguration methods are all deprecated.
         // if (isAndroid10OrLater()) {
