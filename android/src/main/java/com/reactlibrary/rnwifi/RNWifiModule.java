@@ -16,9 +16,10 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.net.wifi.WifiNetworkSpecifier;
 import android.os.Build;
+import android.os.PatternMatcher;
 import android.provider.Settings;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
@@ -268,6 +269,29 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
         // 		1) create WifiNetworkSpecifier https://developer.android.com/reference/android/net/wifi/WifiNetworkSpecifier.Builder
         //		2) create NetworkRequest https://developer.android.com/reference/android/net/NetworkRequest.Builder
         //      3) connectivityManager.requestNetwork()
+
+        if (isAndroid10OrLater()) {
+            final WifiNetworkSpecifier wifiNetworkSpecifier = new WifiNetworkSpecifier.Builder()
+              .setSsidPattern(new PatternMatcher(SSID, PatternMatcher.PATTERN_PREFIX))
+              .build();
+
+            final NetworkRequest networkRequest = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .setNetworkSpecifier(wifiNetworkSpecifier)
+                .build();
+
+            final ConnectivityManager connectivityManager = (ConnectivityManager) context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+            final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
+              public void onAvailable(Network network) {
+                promise.resolve(null);
+              }
+            };
+
+          connectivityManager.requestNetwork(networkRequest, networkCallback);
+            return;
+        }
 
         // create network
         final WifiConfiguration wifiConfiguration = new WifiConfiguration();
@@ -617,7 +641,6 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
      * @return true if the current sdk is above or equal to Android Q
      */
     private static boolean isAndroid10OrLater() {
-        return false; // TODO: Compatibility with Android 10
-        // return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
     }
 }
