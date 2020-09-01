@@ -18,7 +18,6 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiNetworkSpecifier;
 import android.os.Build;
-import android.os.PatternMatcher;
 import android.provider.Settings;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -263,16 +262,9 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
      * @param promise  to resolve or reject if connecting worked
      */
     private void connectTo(@NonNull final String SSID, @Nullable final String password, @NonNull final WIFI_ENCRYPTION encryption, @NonNull final Promise promise) {
-        // TODO: Compatibility with Android 10
-        // Note: For now Android 10 still works but in the future, the WifiConfiguration methods are all deprecated.
-        // if (isAndroid10OrLater()) {
-        // 		1) create WifiNetworkSpecifier https://developer.android.com/reference/android/net/wifi/WifiNetworkSpecifier.Builder
-        //		2) create NetworkRequest https://developer.android.com/reference/android/net/NetworkRequest.Builder
-        //      3) connectivityManager.requestNetwork()
-
         if (isAndroid10OrLater()) {
             final WifiNetworkSpecifier wifiNetworkSpecifier = new WifiNetworkSpecifier.Builder()
-              .setSsidPattern(new PatternMatcher(SSID, PatternMatcher.PATTERN_PREFIX))
+              .setSsid(SSID)
               .build();
 
             final NetworkRequest networkRequest = new NetworkRequest.Builder()
@@ -282,14 +274,34 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
                 .build();
 
             final ConnectivityManager connectivityManager = (ConnectivityManager) context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (connectivityManager == null) {
+              promise.reject("connectivityManagerError", "Could not get the ConnectivityManager (SystemService).");
+              return;
+            }
 
             final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
-              public void onAvailable(Network network) {
+              @Override
+              public void onAvailable(@NonNull Network network) {
+                super.onAvailable(network);
                 promise.resolve(null);
+              }
+
+              @Override
+              public void onBlockedStatusChanged(@NonNull Network network, boolean blocked) {
+                super.onBlockedStatusChanged(network, blocked);
+                if (blocked) {
+                  promise.reject("connectNetworkFailed", String.format("Connection was blocked, could not connect to network with SSID: %s", SSID));
+                }
+              }
+
+              @Override
+              public void onUnavailable() {
+                super.onUnavailable();
+                promise.reject("connectNetworkFailed", String.format("Timeout or user cancelled connecting to network with SSID: %s", SSID));
               }
             };
 
-          connectivityManager.requestNetwork(networkRequest, networkCallback);
+            connectivityManager.requestNetwork(networkRequest, networkCallback, 60000);
             return;
         }
 
