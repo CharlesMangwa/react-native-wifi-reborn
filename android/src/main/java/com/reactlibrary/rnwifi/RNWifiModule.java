@@ -264,8 +264,8 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
     private void connectTo(@NonNull final String SSID, @Nullable final String password, @NonNull final WIFI_ENCRYPTION encryption, @NonNull final Promise promise) {
         if (isAndroid10OrLater()) {
             final WifiNetworkSpecifier wifiNetworkSpecifier = new WifiNetworkSpecifier.Builder()
-              .setSsid(SSID)
-              .build();
+                .setSsid(SSID)
+                .build();
 
             final NetworkRequest networkRequest = new NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
@@ -275,30 +275,36 @@ public class RNWifiModule extends ReactContextBaseJavaModule {
 
             final ConnectivityManager connectivityManager = (ConnectivityManager) context.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
             if (connectivityManager == null) {
-              promise.reject("connectivityManagerError", "Could not get the ConnectivityManager (SystemService).");
-              return;
+                promise.reject("connectivityManagerError", "Could not get the ConnectivityManager (SystemService).");
+                return;
             }
 
             final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
-              @Override
-              public void onAvailable(@NonNull Network network) {
-                super.onAvailable(network);
-                promise.resolve(null);
-              }
-
-              @Override
-              public void onBlockedStatusChanged(@NonNull Network network, boolean blocked) {
-                super.onBlockedStatusChanged(network, blocked);
-                if (blocked) {
-                  promise.reject("connectNetworkFailed", String.format("Connection was blocked, could not connect to network with SSID: %s", SSID));
+                @Override
+                public void onAvailable(@NonNull Network network) {
+                    super.onAvailable(network);
+                    promise.resolve(null);
                 }
-              }
 
-              @Override
-              public void onUnavailable() {
-                super.onUnavailable();
-                promise.reject("connectNetworkFailed", String.format("Timeout or user cancelled connecting to network with SSID: %s", SSID));
-              }
+                @Override
+                public void onBlockedStatusChanged(@NonNull Network network, boolean blocked) {
+                    super.onBlockedStatusChanged(network, blocked);
+                    if (blocked) {
+                        promise.reject("connectNetworkFailed", String.format("Connection was blocked, could not connect to network with SSID: %s", SSID));
+                    }
+                }
+
+                @Override
+                public void onLost(@NonNull Network network) {
+                    super.onLost(network);
+                    promise.reject("connectNetworkFailed", String.format("Connection was lost with network with SSID: %s", SSID));
+                }
+
+                @Override
+                public void onUnavailable() {
+                    super.onUnavailable();
+                    promise.reject("connectNetworkFailed", String.format("Timeout or user cancelled connecting to network with SSID: %s", SSID));
+                }
             };
 
             connectivityManager.requestNetwork(networkRequest, networkCallback, 60000);
